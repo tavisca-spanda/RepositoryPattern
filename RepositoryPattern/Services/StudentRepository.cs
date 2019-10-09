@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace RepositoryPattern.Services
 {
-    public class StudentRepository
+    public class StudentRepository : IStudentRepository
     {
         private readonly StudentDetailsContext _context;
         public StudentRepository(StudentDetailsContext _context )
@@ -21,7 +21,7 @@ namespace RepositoryPattern.Services
             return _context.StudentDetails.ToList();
         }
 
-        public StudentDetails SelectByID(string id)
+        public StudentDetails SelectByID(Guid id)
         {
             return _context.StudentDetails.Find(id);
         }
@@ -32,32 +32,9 @@ namespace RepositoryPattern.Services
             
         }
 
-        public int Update(Guid id, StudentDetails studentDetails)
+        public void Update(StudentDetails studentDetails)
         {
-            if (id != studentDetails.ID)
-            {
-                return 400;
-            }
-
             _context.Entry(studentDetails).State = EntityState.Modified;
-
-            try
-            {
-                _context.SaveChanges();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StudentDetailsExists(id))
-                {
-                    return 404;
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return 204;
         }
 
         
@@ -69,7 +46,7 @@ namespace RepositoryPattern.Services
             
         }
 
-        public void Save(StudentDetails studentDetails)
+        public void Save()
         {
 
             _context.SaveChanges();

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RepositoryPattern.Models;
+using RepositoryPattern.Services;
 
 namespace RepositoryPattern.Controllers
 {
@@ -13,25 +14,31 @@ namespace RepositoryPattern.Controllers
     [ApiController]
     public class StudentDetailsController : ControllerBase
     {
-        private readonly StudentDetailsContext _context;
+        private readonly IStudentRepository _studentRepository;
 
-        public StudentDetailsController(StudentDetailsContext context)
+
+        public StudentDetailsController(IStudentRepository studentRepository)
         {
-            _context = context;
+            _studentRepository = studentRepository;
         }
 
         // GET: api/StudentDetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<StudentDetails>>> GetStudentDetails()
+        public IEnumerable<StudentDetails> GetStudentDetails()
         {
-            return await _context.StudentDetails.ToListAsync();
+            
+            var studentList= _studentRepository.SelectAll();
+
+            return studentList;
+
+
         }
 
         // GET: api/StudentDetails/5
         [HttpGet("{id}")]
         public async Task<ActionResult<StudentDetails>> GetStudentDetails(Guid id)
         {
-            var studentDetails = await _context.StudentDetails.FindAsync(id);
+            var studentDetails =  _studentRepository.SelectByID(id);
 
             if (studentDetails == null)
             {
@@ -50,15 +57,15 @@ namespace RepositoryPattern.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(studentDetails).State = EntityState.Modified;
+            _studentRepository.Update(studentDetails);
 
             try
             {
-                await _context.SaveChangesAsync();
+                _studentRepository.Save();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!StudentDetailsExists(id))
+                if (!_studentRepository.StudentDetailsExists(id))
                 {
                     return NotFound();
                 }
@@ -75,8 +82,8 @@ namespace RepositoryPattern.Controllers
         [HttpPost]
         public async Task<ActionResult<StudentDetails>> PostStudentDetails(StudentDetails studentDetails)
         {
-            _context.StudentDetails.Add(studentDetails);
-            await _context.SaveChangesAsync();
+            _studentRepository.Insert(studentDetails);
+            _studentRepository.Save();
 
             return CreatedAtAction("GetStudentDetails", new { id = studentDetails.ID }, studentDetails);
         }
@@ -85,21 +92,18 @@ namespace RepositoryPattern.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<StudentDetails>> DeleteStudentDetails(Guid id)
         {
-            var studentDetails = await _context.StudentDetails.FindAsync(id);
+            var studentDetails =  _studentRepository.SelectByID(id);
             if (studentDetails == null)
             {
                 return NotFound();
             }
 
-            _context.StudentDetails.Remove(studentDetails);
-            await _context.SaveChangesAsync();
+            _studentRepository.Delete(studentDetails);
+            _studentRepository.Save();
 
             return studentDetails;
         }
 
-        private bool StudentDetailsExists(Guid id)
-        {
-            return _context.StudentDetails.Any(e => e.ID == id);
-        }
+       
     }
 }
